@@ -2,13 +2,13 @@ import os
 from google.cloud import secretmanager
 
 class KeyManager:
-    """خزينة مركزية لإدارة وجلب مفاتيح الـ API لجميع النماذج والشركات المعتمدة"""
+    """خزينة مركزية لإدارة وجلب مفاتيح الـ API لجميع النماذج والشركات"""
     
     def __init__(self, project_id):
         self.client = secretmanager.SecretManagerServiceClient()
         self.project_id = project_id
         
-        # القاموس الشامل لكل الشركات والخدمات التي ذكرتها
+        # القاموس الشامل لكل الشركات والخدمات
         self.secret_map = {
             "openai": "OPENAI_API_KEY",
             "anthropic": "ANTHROPIC_API_KEY",
@@ -31,7 +31,7 @@ class KeyManager:
         }
 
     def get_api_key(self, provider):
-        """جلب المفتاح السري من Google Secret Manager بناءً على اسم الشركة"""
+        """جلب المفتاح السري من Google Secret Manager"""
         secret_id = self.secret_map.get(provider.lower())
         if not secret_id:
             raise ValueError(f"المزود {provider} غير مدرج في الخزينة المركزية.")
@@ -39,3 +39,20 @@ class KeyManager:
         name = f"projects/{self.project_id}/secrets/{secret_id}/versions/latest"
         response = self.client.access_secret_version(request={"name": name})
         return response.payload.data.decode("UTF-8")
+
+# --- كود الاختبار الذاتي عند تشغيل الملف ---
+if __name__ == "__main__":
+    # ضع هنا رقم مشروعك في Google Cloud (Project ID)
+    MY_PROJECT_ID = "ضع_هنا_رقم_مشروعك" 
+    
+    try:
+        manager = KeyManager(project_id=MY_PROJECT_ID)
+        print("✅ تم تهيئة الخزينة بنجاح!")
+        
+        # تجربة جلب مفتاح OpenAI (تأكد من وجوده في Secret Manager)
+        test_key = manager.get_api_key("openai")
+        print(f"🔑 تم جلب مفتاح OpenAI بنجاح! طول المفتاح: {len(test_key)} حرف.")
+        
+    except Exception as e:
+        print(f"❌ حدث خطأ أثناء الاتصال: {e}")
+        print("💡 نصيحة: تأكد من إعداد GOOGLE_APPLICATION_CREDENTIALS وأن السكرت موجود في Google Cloud.")
